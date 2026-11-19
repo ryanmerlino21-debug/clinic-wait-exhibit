@@ -1,8 +1,8 @@
 // Clinic Wait-Time Simulator: the trained network runs in plain JS, no libraries.
 const $ = (id) => document.getElementById(id);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const STAFF_COLORS = { 1: "#E5256F", 2: "#F27A0C", 3: "#B58900", 4: "#0FA89A", 5: "#5B3DF5" };
-const PEOPLE_COLORS = ["#E5256F", "#F27A0C", "#FFC93C", "#2BA8FF", "#8A3CF0", "#0FA89A"];
+const STAFF_COLORS = { 1: "#8576F8", 2: "#6B5AF0", 3: "#5240DB", 4: "#3A2DB0", 5: "#1F1A6B" }; // one hue, light to dark
+const PEOPLE_COLORS = ["#5240DB", "#9B8FFA"];
 let M; // model.json
 const state = { hour: 11, day: "Mon", staff: 2, queue: 12 };
 let shownPred = 0, prevQueue = 0, prevStaff = 0;
@@ -21,16 +21,16 @@ function predict(hour, day, staff, queue) {
 }
 const fmtHour = (h) => (h === 12 ? "12 PM" : h > 12 ? h - 12 + " PM" : h + " AM");
 function tier(w) {
-  if (w < 30) return { t: "⚡ Quick visit", c: "#0B7F74" };
-  if (w < 70) return { t: "🙂 Pretty normal", c: "#8A6A00" };
-  if (w < 130) return { t: "😬 A long wait", c: "#C25E00" };
-  return { t: "🔥 Painful wait", c: "#C21858" };
+  if (w < 30) return { t: "Quick visit", c: "#1B1B3A" };
+  if (w < 70) return { t: "Pretty normal", c: "#1B1B3A" };
+  if (w < 130) return { t: "A long wait", c: "#1B1B3A" };
+  return { t: "Painful wait", c: "#1B1B3A" };
 }
 const hm = (m) => { const r = Math.round(m); return r < 60 ? "" : `about ${Math.floor(r / 60)} h ${r % 60} min`; };
 
 // ---------- simulator ----------
 const personSVG = (c) => `<svg viewBox="0 0 24 32"><circle cx="12" cy="8" r="6" fill="${c}" stroke="#1B1B3A" stroke-width="1.5"/><path d="M2 31c0-9 4-14 10-14s10 5 10 14z" fill="${c}" stroke="#1B1B3A" stroke-width="1.5"/></svg>`;
-const staffSVG = `<svg viewBox="0 0 24 28"><circle cx="12" cy="7" r="5" fill="#fff"/><path d="M2 28c0-8 4-13 10-13s10 5 10 13z" fill="#fff"/><path d="M12 17v7M8.5 20.5h7" stroke="#0FA89A" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+const staffSVG = `<svg viewBox="0 0 24 28"><circle cx="12" cy="7" r="5" fill="#fff"/><path d="M2 28c0-8 4-13 10-13s10 5 10 13z" fill="#fff"/><path d="M12 17v7M8.5 20.5h7" stroke="#4B3BD8" stroke-width="2.4" stroke-linecap="round"/></svg>`;
 
 function setState(patch) { Object.assign(state, patch); render(); }
 
@@ -48,7 +48,7 @@ function render() {
   $("desks").innerHTML = [1, 2, 3, 4, 5].map((n) =>
     `<button type="button" class="desk${n <= c.staff ? " on" : ""}${n <= c.staff && n > prevStaff ? " pop" : ""}" data-n="${n}" aria-label="Set staff to ${n}">${n <= c.staff ? staffSVG : "+"}</button>`).join("");
   $("people").innerHTML = c.queue === 0
-    ? `<span class="empty-room">Nobody waiting 🎉</span>`
+    ? `<span class="empty-room">Nobody waiting</span>`
     : Array.from({ length: c.queue }, (_, i) => `<span class="person${i >= prevQueue ? " pop" : ""}">${personSVG(PEOPLE_COLORS[i % PEOPLE_COLORS.length])}</span>`).join("");
   prevQueue = c.queue; prevStaff = c.staff;
 
@@ -77,8 +77,8 @@ function render() {
   }).join("");
   const gains = preds.slice(0, 4).map((v, i) => v - preds[i + 1]);
   $("insight").textContent = c.queue === 0
-    ? "💡 With nobody waiting, staffing barely matters. Add patients to see the effect."
-    : `💡 Going from 1 to 2 staff saves about ${Math.round(gains[0])} min here. Going from 4 to 5 saves only about ${Math.round(gains[3])} min. Each extra person helps less than the one before.`;
+    ? "With nobody waiting, staffing barely matters. Add patients to see the effect."
+    : `Going from 1 to 2 staff saves about ${Math.round(gains[0])} min here. Going from 4 to 5 saves only about ${Math.round(gains[3])} min. Each extra person helps less than the one before.`;
 }
 
 function countTo(target) {
@@ -96,11 +96,11 @@ function countTo(target) {
 }
 
 const PRESETS = [
-  { n: "😰 Monday rush", s: { day: "Mon", hour: 9, staff: 2, queue: 18 } },
-  { n: "😌 Quiet afternoon", s: { day: "Wed", hour: 15, staff: 3, queue: 3 } },
-  { n: "💪 Fully staffed", s: { day: "Thu", hour: 11, staff: 5, queue: 12 } },
-  { n: "🧍 Skeleton crew", s: { day: "Tue", hour: 12, staff: 1, queue: 14 } },
-  { n: "🎲 Surprise me", s: null },
+  { n: "Monday rush", s: { day: "Mon", hour: 9, staff: 2, queue: 18 } },
+  { n: "Quiet afternoon", s: { day: "Wed", hour: 15, staff: 3, queue: 3 } },
+  { n: "Fully staffed", s: { day: "Thu", hour: 11, staff: 5, queue: 12 } },
+  { n: "Skeleton crew", s: { day: "Tue", hour: 12, staff: 1, queue: 14 } },
+  { n: "Surprise me", s: null },
 ];
 function setupControls() {
   $("presets").innerHTML = PRESETS.map((p, i) => `<button class="preset" type="button" data-i="${i}">${p.n}</button>`).join("");
@@ -143,7 +143,7 @@ function guessBtn() {
   $("s-you").textContent = game.you; $("s-ai").textContent = game.ai;
   game.done = true; $("guess").disabled = true;
   $("guess-btn").textContent = "Next visit →";
-  $("reveal").innerHTML = `<div class="win">${youWin ? "🎉 You win this round!" : "🤖 The network wins this round."}</div>
+  $("reveal").innerHTML = `<div class="win">${youWin ? "You win this round!" : "The network wins this round."}</div>
     <div class="row"><div class="tag"><small>Actual wait</small>${r.wait_minutes} min</div><div class="tag"><small>You</small>${g} min (off by ${Math.round(youErr)})</div><div class="tag"><small>Network</small>${r.predicted} min (off by ${Math.round(aiErr)})</div></div>`;
 }
 
@@ -157,7 +157,7 @@ function renderStats() {
     <div class="stat"><b>${m.baseline_mae} min</b><span>baseline: always guess the median (${M.baseline_wait} min)</span></div>
     <div class="stat"><b>${(m.baseline_mae / m.model_mae).toFixed(1)}× better</b><span>smaller error than the baseline</span></div>`;
   const w = M.worst;
-  $("mistake").innerHTML = `<b>🔍 One mistake worth understanding.</b> A ${w.day_of_week} ${fmtHour(w.hour)} visit with ${w.staff_on_shift} staff and ${w.patients_in_queue} in the queue waited ${w.wait_minutes} min, but the model said ${w.predicted} min (off by ${Math.abs(w.error)}). Other Monday visits with 5 staff and 13 to 17 in the queue waited anywhere from about 37 to 70 min, so the model guessed near the middle of that spread and this visit was just unusually quick. Most of this miss is randomness in the data that these four inputs can't explain. More data in that corner, or an extra input like how many patients each staff member sees per hour, might help a little.`;
+  $("mistake").innerHTML = `<b>One mistake worth understanding.</b> A ${w.day_of_week} ${fmtHour(w.hour)} visit with ${w.staff_on_shift} staff and ${w.patients_in_queue} in the queue waited ${w.wait_minutes} min, but the model said ${w.predicted} min (off by ${Math.abs(w.error)}). Other Monday visits with 5 staff and 13 to 17 in the queue waited anywhere from about 37 to 70 min, so the model guessed near the middle of that spread and this visit was just unusually quick. Most of this miss is randomness in the data that these four inputs can't explain. More data in that corner, or an extra input like how many patients each staff member sees per hour, might help a little.`;
   $("legend").innerHTML = [1, 2, 3, 4, 5].map((s) => `<button type="button" class="lg" data-s="${s}" aria-pressed="true" style="background:${STAFF_COLORS[s]}">${s} staff</button>`).join("");
   $("legend").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
