@@ -4,73 +4,148 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clinic Wait-Time Simulator</title>
-<meta name="description" content="Adjust a simulated clinic and see a small neural network predict the wait time.">
+<meta name="description" content="Run a simulated clinic, play against a neural network, and see how staffing changes patient wait times.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>Clinic Wait-Time Simulator</h1>
-  <p class="lede">How much do staffing and queue length change how long patients wait? Move the sliders and a small neural network predicts the wait. The clinic is simulated, so no real patients are involved.</p>
+<a class="skip" href="#sim">Skip to the simulator</a>
+<nav class="nav" aria-label="Sections">
+  <span class="brand"><span class="dot"></span>Clinic Wait Lab</span>
+  <a href="#sim">Simulator</a><a href="#game">Beat the AI</a><a href="#test">Results</a><a href="#chat-h">Ask</a>
+</nav>
+
+<header class="hero">
+  <div class="hero-in">
+    <p class="kicker">Neural network exhibit</p>
+    <h1>How long will you <span class="hl">wait?</span></h1>
+    <p class="lede">Run a simulated clinic. Add staff, fill the waiting room, change the day, and watch a neural network predict the wait in real time. Then see if you can out-guess it.</p>
+    <div class="chips-hero">
+      <span class="pill p1">2,000 simulated visits</span>
+      <span class="pill p2">Avg. miss: <b id="hero-mae">–</b> min</span>
+      <span class="pill p3">Runs in your browser</span>
+    </div>
+    <a class="btn big" href="#sim">Start simulating ↓</a>
+  </div>
 </header>
 
 <main>
-<section aria-labelledby="sim-h">
-  <h2 id="sim-h">1. Run the clinic</h2>
-  <div class="sim">
-    <div class="controls">
-      <label>Hour of day <output id="o-hour"></output>
-        <input type="range" id="hour" min="8" max="17" step="1" value="11"></label>
-      <label>Day
-        <select id="day"></select></label>
-      <label>Staff on shift <output id="o-staff"></output>
-        <input type="range" id="staff" min="1" max="5" step="1" value="2"></label>
-      <label>Patients in queue <output id="o-queue"></output>
-        <input type="range" id="queue" min="0" max="20" step="1" value="12"></label>
+<section id="sim" aria-labelledby="sim-h">
+  <h2 id="sim-h"><span class="num n1">1</span>Run the clinic</h2>
+  <p class="hint">Tip: click a desk to set staff, or try a scenario.</p>
+  <div class="presets" id="presets" role="group" aria-label="Scenarios"></div>
+
+  <div class="stage">
+    <div class="scene card">
+      <div class="scene-row">
+        <div class="scene-label">Staff on shift <b id="staff-count"></b></div>
+        <div class="desks" id="desks" role="group" aria-label="Staff desks"></div>
+      </div>
+      <div class="scene-row">
+        <div class="scene-label">Waiting room <b id="queue-count"></b></div>
+        <div class="people" id="people" aria-hidden="true"></div>
+      </div>
     </div>
-    <div class="result" aria-live="polite">
-      <div class="big"><span id="pred">–</span><small> min</small></div>
-      <div class="sub">predicted wait</div>
+
+    <div class="result card" aria-live="polite">
+      <div class="r-top">Predicted wait</div>
+      <div class="big"><span id="pred">–</span><small>min</small></div>
+      <div class="hm" id="hm"></div>
+      <div class="meter" aria-hidden="true"><div class="marker" id="marker"></div></div>
+      <div class="tier" id="tier"></div>
       <div class="sub" id="vs-base"></div>
+      <button class="btn small" id="plus-one" type="button"></button>
+    </div>
+  </div>
+
+  <div class="controls card">
+    <div class="ctl">
+      <div class="ctl-h">Day</div>
+      <div class="seg" id="days" role="radiogroup" aria-label="Day of week"></div>
+    </div>
+    <div class="ctl">
+      <label class="ctl-h" for="hour">Time <output id="o-hour"></output></label>
+      <input type="range" id="hour" min="8" max="17" step="1" value="11">
+      <div class="ticks"><span>8am</span><span>12pm</span><span>5pm</span></div>
+    </div>
+    <div class="ctl">
+      <div class="ctl-h">Staff on shift</div>
+      <div class="seg" id="staffseg" role="radiogroup" aria-label="Staff on shift"></div>
+    </div>
+    <div class="ctl">
+      <label class="ctl-h" for="queue">Patients waiting <output id="o-queue"></output></label>
+      <div class="stepper">
+        <button type="button" id="q-minus" aria-label="One fewer patient">−</button>
+        <input type="range" id="queue" min="0" max="20" step="1" value="12">
+        <button type="button" id="q-plus" aria-label="One more patient">+</button>
+      </div>
     </div>
   </div>
 
   <h3>Same clinic, different staffing</h3>
-  <p class="hint">Bars show the predicted wait for 1 to 5 staff with your other settings. Your current staffing is highlighted.</p>
-  <div id="bars" class="bars" role="img" aria-label="Predicted wait by number of staff"></div>
+  <p class="hint">Click a bar to try that staffing.</p>
+  <div id="bars" class="bars"></div>
   <p id="insight" class="insight"></p>
 </section>
 
-<section aria-labelledby="test-h">
-  <h2 id="test-h">2. Check the model on visits it never saw</h2>
-  <div class="stats" id="stats"></div>
-  <p>Each dot is one of 300 held-out visits. A dot on the diagonal line means the model got it exactly right. Click a dot to see that visit.</p>
-  <div class="scatterwrap">
-    <svg id="scatter" viewBox="0 0 400 320" role="img" aria-label="Predicted versus actual wait for held-out visits"></svg>
-    <div id="point" class="point">Click a dot, or <button id="show-worst" type="button">show the biggest miss</button>.</div>
+<section id="game" aria-labelledby="game-h">
+  <h2 id="game-h"><span class="num n2">2</span>Can you beat the network?</h2>
+  <p>Here's a real visit from the 300 the model never trained on. Guess how long the patient waited. Whoever lands closer wins the round.</p>
+  <div class="game card">
+    <div class="score" aria-live="polite">
+      <div class="sc you">You <b id="s-you">0</b></div>
+      <div class="sc vs">vs</div>
+      <div class="sc ai">Network <b id="s-ai">0</b></div>
+    </div>
+    <div class="case" id="case"></div>
+    <div class="guess">
+      <label for="guess">Your guess: <b id="guess-val">80</b> min</label>
+      <input type="range" id="guess" min="0" max="330" step="5" value="80">
+    </div>
+    <button class="btn" id="guess-btn" type="button">Lock in my guess</button>
+    <div class="reveal" id="reveal" aria-live="polite"></div>
   </div>
+</section>
+
+<section id="test" aria-labelledby="test-h">
+  <h2 id="test-h"><span class="num n3">3</span>How good is the model?</h2>
+  <div class="stats" id="stats"></div>
+  <p>Each dot is a held-out visit. A dot on the dashed line is a perfect prediction. Click a colored chip to show or hide a staffing level, and click a dot for details.</p>
+  <div class="legend" id="legend" role="group" aria-label="Filter by staff"></div>
+  <div class="scatterwrap card">
+    <svg id="scatter" viewBox="0 0 400 320" role="img" aria-label="Predicted versus actual wait for held-out visits"></svg>
+    <div id="tip" class="tip" hidden></div>
+  </div>
+  <div id="point" class="point">Click a dot, or <button id="show-worst" type="button" class="link">show the biggest miss</button>.</div>
   <div class="mistake" id="mistake"></div>
 </section>
 
 <section aria-labelledby="chat-h">
-  <h2 id="chat-h">3. Ask the exhibit</h2>
-  <p>A small language model runs in your browser (no server, nothing is sent anywhere) and answers from a short guide about this exhibit. It needs WebGPU and downloads about 0.7 GB the first time.</p>
-  <div id="chat-status" class="hint"></div>
-  <button id="enable-chat" type="button">Enable chat</button>
-  <progress id="chat-progress" max="1" value="0" hidden></progress>
-  <div id="chat-load-text" class="hint"></div>
-  <div id="chat" hidden>
-    <div id="log" class="log" aria-live="polite"></div>
-    <form id="chat-form">
-      <input id="chat-input" type="text" autocomplete="off" placeholder="e.g. Where did the data come from?" aria-label="Your question">
-      <button type="submit">Ask</button>
-    </form>
+  <h2 id="chat-h"><span class="num n4">4</span>Ask the exhibit</h2>
+  <p>A small language model runs <b>inside your browser</b> (nothing is sent anywhere) and answers from a short guide. It needs WebGPU and a one-time download of about 0.7 GB.</p>
+  <div class="card chatbox">
+    <div id="chat-status" class="hint"></div>
+    <button id="enable-chat" class="btn" type="button">Enable chat</button>
+    <progress id="chat-progress" max="1" value="0" hidden></progress>
+    <div id="chat-load-text" class="hint"></div>
+    <div id="chat" hidden>
+      <div id="suggest" class="suggest"></div>
+      <div id="log" class="log" aria-live="polite"></div>
+      <form id="chat-form">
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Ask about the data, model, or results…" aria-label="Your question">
+        <button class="btn" type="submit">Ask</button>
+      </form>
+    </div>
   </div>
+  <details class="guide">
+    <summary>Read the exhibit guide (what the chatbot knows)</summary>
+    <pre id="guide-text">Loading…</pre>
+  </details>
 </section>
 </main>
 
 <footer>
   <p><strong>Data:</strong> <a href="https://snsie.github.io/neural-networks/data/clinic-wait-times.csv">clinic-wait-times.csv</a> from the <a href="https://snsie.github.io/neural-networks/exercise.html">Neural Network Explorer</a> course site. It is synthetic (made up), 2,000 visits.</p>
-  <p><strong>Limits:</strong> this models a simulation, not a real clinic. Don't use it to plan real staffing. Chatbot answers can be wrong, so check them against this page and <a href="guide.txt">the guide</a>.</p>
+  <p><strong>Limits:</strong> this models a simulation, not a real clinic. Don't use it to plan real staffing. Chatbot answers can be wrong, so check them against the guide.</p>
   <p><a href="https://github.com/ryanmerlino21-debug/clinic-wait-exhibit">Source and training script</a> are on GitHub.</p>
 </footer>
 <script type="module" src="app.js"></script>
