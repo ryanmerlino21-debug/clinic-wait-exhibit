@@ -33,16 +33,23 @@ A small neural network predicts patient wait time in a simulated clinic. Visitor
 | Guide covering purpose, data, inputs, results, limitations | `site/guide.txt`, shown on the site |
 | Chatbot says when the guide does not answer | System prompt in `site/app.js` |
 | Check WebGPU; "Enable chat" button; loading progress; site works without chat | Site section 5 |
-| Test three questions (Data, Results, Outside the guide) and check answers | `site/chatbot-tests.json`, shown in a table on the site (**not yet run**) |
+| Test three questions (Data, Results, Outside the guide) and check answers | Run on the live site; results and fixes in `site/chatbot-tests.json`, shown in a table on the site |
 | Credit the data source | Site section 6 and footer |
 | Link to site, source, and training script | Footer and this README |
 | Both partners can explain a prediction and a chatbot check | See the team section below |
 
+## Chatbot test results
+
+Run on the live site with WebLLM (Llama-3.2-1B, WebGPU). The first run found an invented answer: asked how the model did on a dataset it was never tested on, the bot said it "performed poorly" with an error of 18.3 minutes. That number is the error on one single visit, and no other dataset was ever tested. Fixes: a "not covered" section in the guide, a stricter system prompt, an example refusal and a key-facts block. After the fixes all three answers match the site. Full before/after answers are in the table on the site.
+
+## Features beyond the minimum
+
+Staffing planner, hour-by-hour staffing schedule, wait map (staff by queue length), scenario comparison with CSV export, shareable scenario links, 90% prediction range, a you-versus-model challenge with running average error, sortable and downloadable held-out predictions, light/dark/auto theme, and saved comparison and score (stored only in your browser).
+
 ## Still to do before submitting
 
-1. **Run the chatbot checks.** Open the live site in a WebGPU browser, select Enable chat, ask the three questions, compare each answer with the site, and fill in `site/chatbot-tests.json` (`answer`, `supported`, optional `note`). Revise `site/guide.txt` if an answer is unsupported. The site table updates automatically.
-2. **Answer the Canvas questions** (not visible in the exercise page).
-3. **Add your partner** as a repository collaborator.
+1. **Answer the Canvas questions** (not visible in the exercise page).
+2. **Add your partner** as a repository collaborator and fill in the team table below.
 
 ## Team
 

@@ -1,10 +1,30 @@
 // Clinic Wait-Time Simulator. The trained network runs in plain JavaScript; no libraries.
-const V = "4"; // bump when data files change so browsers do not use stale copies
+const V = "6"; // bump when data files change so browsers do not use stale copies
 const $ = (id) => document.getElementById(id);
-const STAFF_COLORS = { 1: "#A5B0EE", 2: "#7E8CE0", 3: "#5566CC", 4: "#3A49B0", 5: "#1F2B78" }; // one hue, light to dark
+const STAFF_COLORS = { 1: "var(--s1)", 2: "var(--s2)", 3: "var(--s3)", 4: "var(--s4)", 5: "var(--s5)" }; // one hue; theme-aware
 let M; // model.json
 const state = { hour: 11, day: "Mon", staff: 2, queue: 12, target: 45 };
 const saved = [];
+let P90 = 10; // 90th percentile of absolute test error, set at init
+
+// localStorage is optional: it can be blocked, so every call is guarded.
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
+};
+
+// Scenario lives in the URL so it can be shared.
+function loadFromURL() {
+  const p = new URLSearchParams(location.search);
+  const num = (k, lo, hi) => { const v = parseInt(p.get(k), 10); return Number.isFinite(v) && v >= lo && v <= hi ? v : null; };
+  if (M.days.includes(p.get("d"))) state.day = p.get("d");
+  const h = num("h", 8, 17), s = num("s", 1, 5), q = num("q", 0, 20), t = num("t", 10, 120);
+  if (h !== null) state.hour = h; if (s !== null) state.staff = s; if (q !== null) state.queue = q; if (t !== null) state.target = t;
+}
+function syncURL() {
+  const p = new URLSearchParams({ d: state.day, h: state.hour, s: state.staff, q: state.queue, t: state.target });
+  try { history.replaceState(null, "", "?" + p.toString() + location.hash); } catch { /* ignore */ }
+}
 
 const relu = (x) => (x > 0 ? x : 0);
 function predict(hour, day, staff, queue) {
@@ -20,7 +40,7 @@ function predict(hour, day, staff, queue) {
 }
 const fmtHour = (h) => (h === 12 ? "12 PM" : h > 12 ? h - 12 + " PM" : h + " AM");
 const hm = (m) => { const r = Math.round(m); return r < 60 ? "" : `About ${Math.floor(r / 60)} h ${r % 60} min`; };
-const setState = (patch) => { Object.assign(state, patch); render(); };
+const setState = (patch) => { Object.assign(state, patch); syncURL(); render(); };
 
 // ---------- 1. simulator ----------
 function render() {
@@ -37,7 +57,7 @@ function render() {
   $("hm").textContent = hm(p);
   const diff = p - M.baseline_wait;
   $("vs-base").textContent = `The median wait in the training data is ${M.baseline_wait} min. This scenario is ${Math.abs(Math.round(diff))} min ${diff >= 0 ? "longer" : "shorter"}.`;
-  $("range-note").textContent = `On held-out visits the model is off by about ${M.metrics.model_mae} min on average, so treat this as an estimate.`;
+  $("range-note").textContent = `On held-out visits 90% of predictions were within ${P90.toFixed(0)} min of the actual wait, so the real wait is likely between ${Math.max(0, Math.round(p - P90))} and ${Math.round(p + P90)} min.`;
 
   const preds = [1, 2, 3, 4, 5].map((s) => predict(c.hour, c.day, s, c.queue));
   const max = Math.max(...preds, 1);
@@ -59,16 +79,46 @@ function render() {
   } else {
     $("plan").innerHTML = `<div>No staffing level from 1 to 5 meets ${c.target} min for this queue. The best case is <b>${Math.round(preds[4])} min</b> with 5 staff.</div>`;
   }
-  renderCmp();
+  renderHeat(); renderSched(); renderCmp();
+}
+
+function renderHeat() {
+  const cols = Array.from({ length: 11 }, (_, i) => i * 2);
+  const grid = [1, 2, 3, 4, 5].map((s) => cols.map((q) => predict(state.hour, state.day, s, q)));
+  const max = Math.max(...grid.flat(), 1);
+  const nearest = 2 * Math.round(state.queue / 2);
+  $("heat-hint").textContent = `${state.day} at ${fmtHour(state.hour)}. Darker means a longer predicted wait (minutes). Select a cell to apply it.`;
+  document.querySelector("#heat thead").innerHTML = `<tr><th class="rowh" scope="col">Staff \\ waiting</th>${cols.map((q) => `<th scope="col">${q}</th>`).join("")}</tr>`;
+  document.querySelector("#heat tbody").innerHTML = grid.map((row, i) => `<tr><th class="rowh" scope="row">${i + 1} staff</th>${row.map((v, j) => {
+    const al = 0.08 + 0.92 * (v / max);
+    const cur = i + 1 === state.staff && cols[j] === nearest;
+    return `<td><button type="button" data-s="${i + 1}" data-q="${cols[j]}" class="${al > 0.5 ? "hi" : ""}${cur ? " cur" : ""}" style="background:rgba(var(--heat),${al.toFixed(2)})" aria-label="${i + 1} staff, ${cols[j]} waiting: ${Math.round(v)} minutes">${Math.round(v)}</button></td>`;
+  }).join("")}</tr>`).join("");
+}
+
+function renderSched() {
+  const hours = Array.from({ length: 10 }, (_, i) => 8 + i);
+  const need = hours.map((h) => { for (let s = 1; s <= 5; s++) if (predict(h, state.day, s, state.queue) <= state.target) return s; return 0; });
+  $("sched-hint").textContent = `${state.day}, with ${state.queue} patients waiting at every hour and a target of ${state.target} min. Select an hour to apply it.`;
+  document.querySelector("#sched thead").innerHTML = `<tr><th class="rowh" scope="col">Hour</th>${hours.map((h) => `<th scope="col">${fmtHour(h).replace(" ", "")}</th>`).join("")}</tr>`;
+  document.querySelector("#sched tbody").innerHTML = `<tr><th class="rowh" scope="row">Staff needed</th>${hours.map((h, i) => `<td><button type="button" data-h="${h}" data-s="${need[i] || 5}" class="${need[i] ? "" : "none"}${h === state.hour ? " cur" : ""}" aria-label="${fmtHour(h)}: ${need[i] ? need[i] + " staff needed" : "target not reachable with 5 staff"}">${need[i] || "n/a"}</button></td>`).join("")}</tr>`;
+  const ok = need.every(Boolean), total = need.reduce((x, y) => x + y, 0), bad = need.filter((n) => !n).length;
+  $("sched-sum").textContent = ok
+    ? `Total for the day: ${total} staff-hours to keep every hour at or below ${state.target} min.`
+    : bad === 10
+      ? `A ${state.target} min target is not reachable with 5 staff at any hour with ${state.queue} patients waiting. Try a higher target or a shorter queue.`
+      : `The target is not reachable with 5 staff in ${bad} of 10 hours (shown as n/a). The other ${10 - bad} hours need ${total} staff-hours.`;
 }
 
 function renderCmp() {
+  store.set("cw_cmp", saved);
   const body = document.querySelector("#cmp tbody");
   body.innerHTML = saved.map((r, i) => `<tr><td>${r.day}</td><td>${fmtHour(r.hour)}</td><td>${r.staff}</td><td>${r.queue}</td><td class="num">${r.pred}</td><td><button type="button" data-i="${i}" aria-label="Remove scenario ${i + 1}">Remove</button></td></tr>`).join("");
   $("cmp-empty").hidden = saved.length > 0;
   $("cmp").hidden = saved.length === 0;
   $("clear-cmp").disabled = saved.length === 0;
   $("add-cmp").disabled = saved.length >= 8;
+  $("dl-cmp").disabled = saved.length === 0;
 }
 
 const PRESETS = [
@@ -97,11 +147,31 @@ function setupControls() {
     renderCmp();
   });
   $("clear-cmp").addEventListener("click", () => { saved.length = 0; renderCmp(); });
+  $("dl-cmp").addEventListener("click", () => downloadCSV("scenario-comparison.csv", "day,hour,staff_on_shift,patients_waiting,predicted_wait_min\n" + saved.map((r) => [r.day, r.hour, r.staff, r.queue, r.pred].join(",")).join("\n")));
+  $("heat").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setState({ staff: +b.dataset.s, queue: +b.dataset.q }); });
+  $("sched").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setState({ hour: +b.dataset.h, staff: +b.dataset.s }); });
+  $("copy-link").addEventListener("click", async () => {
+    syncURL();
+    try { await navigator.clipboard.writeText(location.href); $("copy-msg").textContent = "Link copied. Anyone who opens it sees this scenario."; }
+    catch { $("copy-msg").textContent = "Copy this address from the browser bar: " + location.href; }
+  });
   document.querySelector("#cmp tbody").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { saved.splice(+b.dataset.i, 1); renderCmp(); } });
 }
 
+function downloadCSV(name, csv) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+
 // ---------- 2. challenge ----------
-const game = { you: 0, ai: 0, cur: null, done: false };
+const game = Object.assign({ you: 0, ai: 0, youSum: 0, aiSum: 0, rounds: 0 }, store.get("cw_game", {}), { cur: null, done: false });
+function showScore() {
+  $("s-you").textContent = game.you; $("s-ai").textContent = game.ai;
+  $("avg").firstChild.textContent = game.rounds
+    ? `Average error over ${game.rounds} round${game.rounds > 1 ? "s" : ""}: you ${(game.youSum / game.rounds).toFixed(1)} min, model ${(game.aiSum / game.rounds).toFixed(1)} min. `
+    : "Average error appears after your first round. ";
+}
 function newRound() {
   game.cur = M.test_rows[Math.floor(Math.random() * M.test_rows.length)];
   game.done = false;
@@ -118,7 +188,9 @@ function guessBtn() {
   const youErr = Math.abs(g - r.wait_minutes), aiErr = Math.abs(r.predicted - r.wait_minutes);
   const youWin = youErr < aiErr;
   youWin ? game.you++ : game.ai++;
-  $("s-you").textContent = game.you; $("s-ai").textContent = game.ai;
+  game.youSum += youErr; game.aiSum += aiErr; game.rounds++;
+  store.set("cw_game", { you: game.you, ai: game.ai, youSum: game.youSum, aiSum: game.aiSum, rounds: game.rounds });
+  showScore();
   game.done = true; $("guess").disabled = true;
   $("guess-btn").textContent = "Next visit";
   $("reveal").innerHTML = `<div class="win">${youWin ? "You were closer this round." : "The model was closer this round."}</div>
@@ -179,7 +251,7 @@ function drawScatter() {
   s += `<text x="${(W + pad.l) / 2}" y="${H - 4}" text-anchor="middle">actual wait (min)</text><text transform="translate(10 ${H / 2}) rotate(-90)" text-anchor="middle">predicted wait (min)</text>`;
   rows.forEach((r, i) => {
     if (isWorst(r)) s += `<circle class="ring" cx="${x(r.wait_minutes)}" cy="${y(r.predicted)}" r="9"/>`;
-    s += `<circle class="pt" data-i="${i}" data-s="${r.staff_on_shift}" cx="${x(r.wait_minutes)}" cy="${y(r.predicted)}" r="3.6" fill="${STAFF_COLORS[r.staff_on_shift]}" tabindex="0" aria-label="actual ${r.wait_minutes}, predicted ${r.predicted}"/>`;
+    s += `<circle class="pt" data-i="${i}" data-s="${r.staff_on_shift}" cx="${x(r.wait_minutes)}" cy="${y(r.predicted)}" r="3.6" style="fill:${STAFF_COLORS[r.staff_on_shift]}" tabindex="0" aria-label="actual ${r.wait_minutes}, predicted ${r.predicted}"/>`;
   });
   $("scatter").innerHTML = s;
 }
@@ -228,11 +300,7 @@ function setupTable() {
   $("dl").addEventListener("click", () => {
     const rows = filteredRows();
     const csv = "day,hour,staff_on_shift,patients_in_queue,actual_wait,predicted_wait,error\n" + rows.map((r) => [r.day_of_week, r.hour, r.staff_on_shift, r.patients_in_queue, r.wait_minutes, r.predicted, r.error].join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = "heldout-predictions.csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadCSV("heldout-predictions.csv", csv);
   });
 }
 
@@ -247,9 +315,12 @@ async function renderChatTests() {
   try { tests = await (await fetch("chatbot-tests.json?v=" + V)).json(); } catch { return; }
   QUESTIONS = tests.map((t) => t.question);
   const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const pill = (v) => { const k = String(v).toLowerCase(); return `<span class="pill ${k === "yes" ? "yes" : k === "no" ? "no" : "partly"}">${esc(v)}</span>`; };
   document.querySelector("#chat-tests tbody").innerHTML = tests.map((t) => {
     const ran = t.answer != null;
-    return `<tr><td>${esc(t.type)}</td><td>${esc(t.question)}</td><td>${ran ? esc(t.answer) : '<span class="pending">Not yet run</span>'}</td><td>${ran ? (t.supported ? "Yes" : "No") + (t.note ? ": " + esc(t.note) : "") : "–"}</td></tr>`;
+    const first = t.initial_answer ? `<span class="cell-first"><b>First run:</b> ${esc(t.initial_answer)} ${pill(t.initial_supported)}</span>` : "";
+    const final = ran ? `${t.initial_answer ? "<b>After fix:</b> " : ""}${esc(t.answer)}` : '<span class="pending">Not yet run</span>';
+    return `<tr><td>${esc(t.type)}</td><td>${esc(t.question)}</td><td>${first}${final}</td><td>${ran ? pill(t.supported) + (t.note ? esc(t.note) : "") : "–"}</td></tr>`;
   }).join("");
 }
 function addMsg(cls, text) {
@@ -279,7 +350,7 @@ async function enableChat() {
 }
 async function ask(q) {
   if (asking || !engine) return;
-  asking = true;
+  asking = true; setChatBusy(true);
   addMsg("u", q);
   const out = addMsg("a", "Thinking…"); out.classList.add("typing");
   const sys = "You answer questions about one web exhibit using ONLY the guide below. " +
@@ -305,7 +376,12 @@ async function ask(q) {
     }
     history.push({ role: "assistant", content: text });
   } catch (e) { out.classList.remove("typing"); out.textContent = "Something went wrong: " + (e.message || e); }
-  asking = false;
+  asking = false; setChatBusy(false);
+}
+function setChatBusy(b) {
+  $("chat-input").disabled = b; $("ask-btn").disabled = b;
+  document.querySelectorAll("#suggest button").forEach((x) => (x.disabled = b));
+  if (!b) $("chat-input").focus();
 }
 function setupChat() {
   if (!("gpu" in navigator)) {
@@ -318,6 +394,7 @@ function setupChat() {
   $("chat-status").textContent = "The model downloads only after you select Enable chat.";
   $("enable-chat").addEventListener("click", enableChat);
   $("suggest").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) ask(b.textContent); });
+  $("clear-chat").addEventListener("click", () => { if (asking) return; $("log").innerHTML = ""; history.length = 0; });
   $("chat-form").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const q = $("chat-input").value.trim();
@@ -326,13 +403,41 @@ function setupChat() {
   });
 }
 
+// ---------- page chrome ----------
+function setupTheme() {
+  const modes = ["auto", "light", "dark"];
+  let i = Math.max(0, modes.indexOf(store.get("cw_theme", "auto")));
+  const apply = () => {
+    const m = modes[i];
+    if (m === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", m);
+    $("theme").textContent = "Theme: " + m;
+    store.set("cw_theme", m);
+  };
+  apply();
+  $("theme").addEventListener("click", () => { i = (i + 1) % modes.length; apply(); });
+}
+function setupNavHighlight() {
+  const links = [...document.querySelectorAll(".top nav a")];
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => { if (en.isIntersecting) links.forEach((l) => l.setAttribute("aria-current", l.getAttribute("href") === "#" + en.target.id)); });
+  }, { rootMargin: "-25% 0px -65% 0px" });
+  document.querySelectorAll("main section[id]").forEach((s) => io.observe(s));
+}
+
 // ---------- init ----------
 async function init() {
   M = await (await fetch("model.json?v=" + V)).json();
   M.test_rows.forEach((r) => (r.abs_err = Math.abs(r.error)));
+  const errs = M.test_rows.map((r) => r.abs_err).sort((x, y) => x - y);
+  P90 = errs[Math.floor(0.9 * (errs.length - 1))];
+  loadFromURL();
+  saved.push(...store.get("cw_cmp", []).filter((r) => r && M.days.includes(r.day)).slice(0, 8));
   try { guide = await (await fetch("guide.txt?v=" + V)).text(); $("guide-text").textContent = guide; } catch { $("guide-text").textContent = "The guide could not be loaded."; }
   setupControls(); render();
   $("guess").addEventListener("input", (e) => { $("guess-val").textContent = e.target.value; });
+  $("reset-score").addEventListener("click", () => { Object.assign(game, { you: 0, ai: 0, youSum: 0, aiSum: 0, rounds: 0 }); store.set("cw_game", {}); showScore(); });
+  showScore(); setupTheme(); setupNavHighlight();
   $("guess-btn").addEventListener("click", guessBtn); newRound();
   renderResults(); drawScatter(); setupScatter(); setupTable(); renderTable();
   await renderChatTests();

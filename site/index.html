@@ -5,7 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clinic Wait-Time Simulator</title>
 <meta name="description" content="A neural network exhibit on how staffing and queue length affect patient wait times, using simulated clinic data.">
-<link rel="stylesheet" href="style.css?v=4">
+<meta name="theme-color" content="#1F2B78">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Clinic Wait-Time Simulator">
+<meta property="og:description" content="A neural network exhibit on how staffing and queue length affect patient wait times, using simulated clinic data.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232B3A9F'/%3E%3Cpath d='M16 7v18M7 16h18' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>try{var t=localStorage.getItem("cw_theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <a class="skip" href="#simulator">Skip to the simulator</a>
@@ -21,9 +27,11 @@
       <a href="#chat">Ask</a>
       <a href="#data">Data &amp; guide</a>
     </nav>
+    <button type="button" class="theme-btn" id="theme" aria-label="Change color theme">Theme: auto</button>
   </div>
 </header>
 
+<noscript><p class="wrap note">This exhibit needs JavaScript to run the model in your browser.</p></noscript>
 <main class="wrap">
 
 <section id="overview" class="intro">
@@ -84,7 +92,11 @@
       <div class="hm" id="hm"></div>
       <div class="vs" id="vs-base"></div>
       <div class="range-note" id="range-note"></div>
-      <button type="button" class="btn" id="add-cmp">Add to comparison</button>
+      <div class="btn-row">
+        <button type="button" class="btn" id="add-cmp">Add to comparison</button>
+        <button type="button" class="btn ghost" id="copy-link">Copy link to this scenario</button>
+      </div>
+      <div class="copy-msg" id="copy-msg" aria-live="polite"></div>
     </div>
   </div>
 
@@ -104,10 +116,23 @@
     </div>
   </div>
 
+  <div class="panel">
+    <h3>Staffing schedule for the day</h3>
+    <p class="hint" id="sched-hint"></p>
+    <div class="table-wrap"><table class="sched" id="sched"><caption class="sr">Smallest staff count meeting the target wait for each hour</caption><thead></thead><tbody></tbody></table></div>
+    <p class="callout" id="sched-sum"></p>
+  </div>
+
+  <div class="panel">
+    <h3>Wait map: staff by queue length</h3>
+    <p class="hint" id="heat-hint"></p>
+    <div class="table-wrap"><table class="heat" id="heat"><caption class="sr">Predicted wait in minutes by staff count and queue length</caption><thead></thead><tbody></tbody></table></div>
+  </div>
+
   <div class="panel" id="cmp-panel">
     <div class="row-between">
       <h3>Scenario comparison</h3>
-      <button type="button" class="btn ghost" id="clear-cmp">Clear</button>
+      <div class="btn-row"><button type="button" class="btn ghost" id="dl-cmp">Download CSV</button><button type="button" class="btn ghost" id="clear-cmp">Clear</button></div>
     </div>
     <div class="table-wrap">
       <table id="cmp">
@@ -125,6 +150,7 @@
   <p class="sec-lead">Each round shows a real held-out visit. Guess its wait. The closer guess wins the round.</p>
   <div class="panel game">
     <div class="score" aria-live="polite">You <b id="s-you">0</b> <span class="sep">·</span> Model <b id="s-ai">0</b></div>
+    <div class="avg" id="avg">Average error appears after your first round. <button type="button" class="link" id="reset-score">Reset score</button></div>
     <div class="case" id="case"></div>
     <div class="guess">
       <label class="lab" for="guess">Your guess <output id="guess-val">80</output> minutes</label>
@@ -241,7 +267,7 @@
       <div id="log" class="log" aria-live="polite"></div>
       <form id="chat-form">
         <input id="chat-input" type="text" autocomplete="off" placeholder="Ask about the data, model or results" aria-label="Your question">
-        <button class="btn primary" type="submit">Ask</button>
+        <div class="chat-actions"><button class="btn primary" type="submit" id="ask-btn">Ask</button><button class="btn ghost" type="button" id="clear-chat">Clear</button></div>
       </form>
     </div>
     <p class="hint">The chatbot answers only from the exhibit guide below and is instructed to say when the guide does not cover a question. Verify its answers against this page.</p>
@@ -292,6 +318,6 @@
     </span>
   </div>
 </footer>
-<script type="module" src="app.js?v=4"></script>
+<script type="module" src="app.js?v=6"></script>
 </body>
 </html>

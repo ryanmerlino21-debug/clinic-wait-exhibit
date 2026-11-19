@@ -1,7 +1,14 @@
 EXHIBIT GUIDE: Clinic Wait-Time Simulator
 
 PURPOSE
-This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It also includes a staffing planner that finds the smallest staff count (1 to 5) whose predicted wait is at or below a target, a scenario comparison table, a challenge where visitors guess waits against the model, and a table of the held-out test predictions that can be downloaded as CSV. It is a teaching exhibit, not a real clinic tool.
+This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It also includes a staffing planner that finds the smallest staff count (1 to 5) whose predicted wait is at or below a target, a scenario comparison table, a challenge where visitors guess waits against the model, and a table of the held-out test predictions that can be downloaded as CSV, an hour-by-hour staffing schedule, a wait map of staff count by queue length, and shareable links to a scenario. It is a teaching exhibit, not a real clinic tool.
+
+KEY FACTS
+- Total visits in the dataset: 2,000 (all simulated).
+- Training visits: 1,400. Validation visits: 300. Test visits: 300. The test visits are the ones used to test the model.
+- Model mean absolute error on the test visits: 4.94 minutes. Baseline mean absolute error: 44.27 minutes. The baseline always predicts the median training wait, 60.3 minutes.
+- The single largest miss on the test visits was 18.3 minutes (one visit, not a different dataset).
+- The model has not been tested on any dataset other than these 2,000 simulated visits.
 
 DATA (where the data came from)
 - Source: the data came from the Neural Network Explorer course website, which provides a made-up (synthetic) clinic file. It was not collected from a real clinic or real patients.

@@ -1,5 +1,29 @@
 [
-  {"type": "Data", "question": "Where did the data come from?", "answer": null, "supported": null, "note": null},
-  {"type": "Results", "question": "How did the model compare with the baseline?", "answer": null, "supported": null, "note": null},
-  {"type": "Outside the guide", "question": "How well did the model work on a dataset it was never tested on?", "answer": null, "supported": null, "note": null}
+  {
+    "type": "Data",
+    "question": "Where did the data come from?",
+    "initial_answer": "The data came from a simulated clinic.",
+    "initial_supported": "Partly",
+    "answer": "The data came from a made-up (synthetic) clinic file. It was not collected from a real clinic or real patients.",
+    "supported": "Yes",
+    "note": "First answer was true but did not say it was a synthetic course file. Added a source line to the guide's data section."
+  },
+  {
+    "type": "Results",
+    "question": "How did the model compare with the baseline?",
+    "initial_answer": "The model's mean absolute error (MAE) was 4.94 minutes, which is roughly 9 times more accurate than the baseline.",
+    "initial_supported": "Yes",
+    "answer": "The model's mean absolute error (MAE) was 4.94 minutes, which is roughly 9 times more accurate than the baseline (mean absolute error of 44.27 minutes).",
+    "supported": "Yes",
+    "note": "Matches the results section (4.94 vs 44.27 min). A stricter prompt briefly made the bot refuse this question, so the prompt now lists the topics the guide does cover."
+  },
+  {
+    "type": "Outside the guide",
+    "question": "How well did the model work on a dataset it was never tested on?",
+    "initial_answer": "The model performed poorly on a dataset it was never tested on, with a mean absolute error of 18.3 minutes.",
+    "initial_supported": "No",
+    "answer": "The guide doesn't say, so I can't answer that.",
+    "supported": "Yes",
+    "note": "First answer was invented: 18.3 min is the error on one single visit, and no other dataset was ever tested. Fixed by adding a 'not covered' section to the guide, a stricter system prompt and an example refusal."
+  }
 ]
