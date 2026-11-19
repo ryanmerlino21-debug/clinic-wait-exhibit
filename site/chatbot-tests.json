@@ -4,7 +4,7 @@
     "question": "Where did the data come from?",
     "initial_answer": "The data came from a simulated clinic.",
     "initial_supported": "Partly",
-    "answer": "The data came from a made-up (synthetic) clinic file. It was not collected from a real clinic or real patients.",
+    "answer": "The data came from a made-up (synthetic) clinic file provided by the Neural Network Explorer course website. It was not collected from a real clinic or real patients.",
     "supported": "Yes",
     "note": "First answer was true but did not say it was a synthetic course file. Added a source line to the guide's data section."
   },
@@ -13,9 +13,9 @@
     "question": "How did the model compare with the baseline?",
     "initial_answer": "The model's mean absolute error (MAE) was 4.94 minutes, which is roughly 9 times more accurate than the baseline.",
     "initial_supported": "Yes",
-    "answer": "The model's mean absolute error (MAE) was 4.94 minutes, which is roughly 9 times more accurate than the baseline (mean absolute error of 44.27 minutes).",
+    "answer": "The model's mean absolute error (MAE) was 4.94 minutes, which is roughly 9 times more accurate than the baseline, which always predicted the median training wait of 60.3 minutes.",
     "supported": "Yes",
-    "note": "Matches the results section (4.94 vs 44.27 min). A stricter prompt briefly made the bot refuse this question, so the prompt now lists the topics the guide does cover."
+    "note": "Matches the results section (4.94 min vs 44.27 min baseline, median 60.3 min). A stricter prompt briefly made the bot refuse this question, so the prompt now lists the topics the guide does cover."
   },
   {
     "type": "Outside the guide",

@@ -1,5 +1,5 @@
 // Clinic Wait-Time Simulator. The trained network runs in plain JavaScript; no libraries.
-const V = "6"; // bump when data files change so browsers do not use stale copies
+const V = "7"; // bump when data files change so browsers do not use stale copies
 const $ = (id) => document.getElementById(id);
 const STAFF_COLORS = { 1: "var(--s1)", 2: "var(--s2)", 3: "var(--s3)", 4: "var(--s4)", 5: "var(--s5)" }; // one hue; theme-aware
 let M; // model.json
