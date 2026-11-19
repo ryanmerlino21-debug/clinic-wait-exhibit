@@ -282,12 +282,18 @@ async function ask(q) {
   addMsg("u", q);
   const out = addMsg("a", "Thinking…"); out.classList.add("typing");
   const sys = "You answer questions about one web exhibit using ONLY the guide below. " +
+    "Quote or paraphrase facts and numbers that appear in the guide. " +
     "If the guide does not contain the answer, reply exactly: \"The guide doesn't say, so I can't answer that.\" " +
+    "In particular, the guide has NO results for any dataset other than the 2,000 simulated visits, so any question about other or new datasets gets that exact reply. " +
     "Never invent numbers, datasets, or results. Keep answers to 1 to 3 sentences.\n\n=== GUIDE ===\n" + guide;
+  const shots = [
+    { role: "user", content: "How accurate is the model on real hospital data?" },
+    { role: "assistant", content: "The guide doesn't say, so I can't answer that." },
+  ];
   history.push({ role: "user", content: q });
   let text = "";
   try {
-    const stream = await engine.chat.completions.create({ messages: [{ role: "system", content: sys }, ...history.slice(-6)], stream: true, temperature: 0.2, max_tokens: 200 });
+    const stream = await engine.chat.completions.create({ messages: [{ role: "system", content: sys }, ...shots, ...history.slice(-6)], stream: true, temperature: 0.2, max_tokens: 200 });
     for await (const chunk of stream) {
       text += chunk.choices[0]?.delta?.content || "";
       out.classList.remove("typing"); out.textContent = text;

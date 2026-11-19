@@ -3,7 +3,8 @@ EXHIBIT GUIDE: Clinic Wait-Time Simulator
 PURPOSE
 This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It also includes a staffing planner that finds the smallest staff count (1 to 5) whose predicted wait is at or below a target, a scenario comparison table, a challenge where visitors guess waits against the model, and a table of the held-out test predictions that can be downloaded as CSV. It is a teaching exhibit, not a real clinic tool.
 
-DATA
+DATA (where the data came from)
+- Source: the data came from the Neural Network Explorer course website, which provides a made-up (synthetic) clinic file. It was not collected from a real clinic or real patients.
 - File: clinic-wait-times.csv from the Neural Network Explorer course site (https://snsie.github.io/neural-networks/).
 - 2,000 simulated visits. The data is made up (synthetic), not from a real clinic.
 - Columns: hour (8 to 17), day_of_week (Mon to Fri), staff_on_shift (1 to 5), patients_in_queue (0 to 20), wait_minutes (the target; 0 to 324 minutes, average about 78).
@@ -23,6 +24,11 @@ RESULTS (test set, 300 visits the model never trained on)
 HIGHLIGHTED MISTAKE
 - A Monday 11:00 visit with 5 staff and 15 people in the queue actually waited 37.4 minutes. The model predicted 55.7 minutes, an error of 18.3 minutes.
 - Similar visits in the data (Monday, 5 staff, 13 to 17 in the queue) waited anywhere from about 37 to 70 minutes, so most of this miss is random variation in the simulated data that no model could predict from these four inputs. More data in that region, or an extra input such as how many patients were seen per hour, might help a little.
+
+NOT COVERED BY THIS GUIDE
+- How the model performs on any dataset other than the 2,000 simulated visits. It has never been tested on any other dataset, so there is no result to report.
+- Real clinics, real patients, or any data collected elsewhere.
+- Any number not stated in this guide. The error of 18.3 minutes above belongs only to one single visit, not to a different dataset.
 
 LIMITATIONS
 - The data is synthetic, so the model describes the simulation and not a real clinic. It should not be used to plan real staffing.
