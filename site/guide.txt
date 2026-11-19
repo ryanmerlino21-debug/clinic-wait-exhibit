@@ -1,7 +1,7 @@
 EXHIBIT GUIDE: Clinic Wait-Time Simulator
 
 PURPOSE
-This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It is a teaching exhibit, not a real clinic tool.
+This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It also includes a staffing planner that finds the smallest staff count (1 to 5) whose predicted wait is at or below a target, a scenario comparison table, a challenge where visitors guess waits against the model, and a table of the held-out test predictions that can be downloaded as CSV. It is a teaching exhibit, not a real clinic tool.
 
 DATA
 - File: clinic-wait-times.csv from the Neural Network Explorer course site (https://snsie.github.io/neural-networks/).

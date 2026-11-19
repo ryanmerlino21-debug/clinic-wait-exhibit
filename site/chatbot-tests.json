@@ -1,0 +1,5 @@
+[
+  {"type": "Data", "question": "Where did the data come from?", "answer": null, "supported": null, "note": null},
+  {"type": "Results", "question": "How did the model compare with the baseline?", "answer": null, "supported": null, "note": null},
+  {"type": "Outside the guide", "question": "How well did the model work on a dataset it was never tested on?", "answer": null, "supported": null, "note": null}
+]
