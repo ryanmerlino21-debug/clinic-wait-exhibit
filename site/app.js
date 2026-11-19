@@ -1,4 +1,5 @@
 // Clinic Wait-Time Simulator. The trained network runs in plain JavaScript; no libraries.
+const V = "4"; // bump when data files change so browsers do not use stale copies
 const $ = (id) => document.getElementById(id);
 const STAFF_COLORS = { 1: "#A5B0EE", 2: "#7E8CE0", 3: "#5566CC", 4: "#3A49B0", 5: "#1F2B78" }; // one hue, light to dark
 let M; // model.json
@@ -243,7 +244,7 @@ let QUESTIONS = ["Where did the data come from?", "How did the model compare wit
 
 async function renderChatTests() {
   let tests = [];
-  try { tests = await (await fetch("chatbot-tests.json")).json(); } catch { return; }
+  try { tests = await (await fetch("chatbot-tests.json?v=" + V)).json(); } catch { return; }
   QUESTIONS = tests.map((t) => t.question);
   const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   document.querySelector("#chat-tests tbody").innerHTML = tests.map((t) => {
@@ -284,11 +285,14 @@ async function ask(q) {
   const sys = "You answer questions about one web exhibit using ONLY the guide below. " +
     "Quote or paraphrase facts and numbers that appear in the guide. " +
     "If the guide does not contain the answer, reply exactly: \"The guide doesn't say, so I can't answer that.\" " +
-    "In particular, the guide has NO results for any dataset other than the 2,000 simulated visits, so any question about other or new datasets gets that exact reply. " +
+    "The guide DOES cover: where the data came from, the data columns, the model inputs and architecture, the train/validation/test split, the baseline, the test results and errors, the highlighted mistake, and the limitations. Answer those questions from the guide. " +
+    "The guide does NOT cover how the model performs on any dataset other than the 2,000 simulated visits, so only questions about other or new datasets get the exact reply above. " +
     "Never invent numbers, datasets, or results. Keep answers to 1 to 3 sentences.\n\n=== GUIDE ===\n" + guide;
   const shots = [
     { role: "user", content: "How accurate is the model on real hospital data?" },
     { role: "assistant", content: "The guide doesn't say, so I can't answer that." },
+    { role: "user", content: "How many inputs does the model use?" },
+    { role: "assistant", content: "Eight numbers: hour, staff on shift, patients in queue, and the weekday as five 0/1 columns." },
   ];
   history.push({ role: "user", content: q });
   let text = "";
@@ -324,9 +328,9 @@ function setupChat() {
 
 // ---------- init ----------
 async function init() {
-  M = await (await fetch("model.json")).json();
+  M = await (await fetch("model.json?v=" + V)).json();
   M.test_rows.forEach((r) => (r.abs_err = Math.abs(r.error)));
-  try { guide = await (await fetch("guide.txt")).text(); $("guide-text").textContent = guide; } catch { $("guide-text").textContent = "The guide could not be loaded."; }
+  try { guide = await (await fetch("guide.txt?v=" + V)).text(); $("guide-text").textContent = guide; } catch { $("guide-text").textContent = "The guide could not be loaded."; }
   setupControls(); render();
   $("guess").addEventListener("input", (e) => { $("guess-val").textContent = e.target.value; });
   $("guess-btn").addEventListener("click", guessBtn); newRound();
