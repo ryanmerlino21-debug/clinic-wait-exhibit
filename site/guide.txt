@@ -1,0 +1,31 @@
+EXHIBIT GUIDE: Clinic Wait-Time Simulator
+
+PURPOSE
+This site lets visitors change a simulated clinic (hour of day, weekday, staff on shift, patients in the queue) and see a small neural network's predicted wait time in minutes. It is a teaching exhibit, not a real clinic tool.
+
+DATA
+- File: clinic-wait-times.csv from the Neural Network Explorer course site (https://snsie.github.io/neural-networks/).
+- 2,000 simulated visits. The data is made up (synthetic), not from a real clinic.
+- Columns: hour (8 to 17), day_of_week (Mon to Fri), staff_on_shift (1 to 5), patients_in_queue (0 to 20), wait_minutes (the target; 0 to 324 minutes, average about 78).
+- The course page says waits grow with the queue, shrink with more staff, and run longer at peak hours and on Mondays.
+
+MODEL
+- A small neural network (multilayer perceptron) with two hidden layers of 64 and 32 units and ReLU activations.
+- Inputs (8 numbers): hour, staff on shift, patients in queue, and the weekday as five 0/1 columns. Inputs are standardized using training-set means and standard deviations.
+- Output: one number, predicted wait in minutes.
+- Split: 70% train (1,400 visits), 15% validation (300), 15% test (300). The architecture was chosen on the validation set. The test set was scored once at the end.
+
+RESULTS (test set, 300 visits the model never trained on)
+- Baseline: always predict the training-set median wait, 60.3 minutes. Baseline mean absolute error: 44.27 minutes.
+- Neural network mean absolute error: 4.94 minutes, so it is roughly 9 times more accurate than the baseline on this data.
+- Error is similar at every staffing level, about 4 to 6 minutes.
+
+HIGHLIGHTED MISTAKE
+- A Monday 11:00 visit with 5 staff and 15 people in the queue actually waited 37.4 minutes. The model predicted 55.7 minutes, an error of 18.3 minutes.
+- Similar visits in the data (Monday, 5 staff, 13 to 17 in the queue) waited anywhere from about 37 to 70 minutes, so most of this miss is random variation in the simulated data that no model could predict from these four inputs. More data in that region, or an extra input such as how many patients were seen per hour, might help a little.
+
+LIMITATIONS
+- The data is synthetic, so the model describes the simulation and not a real clinic. It should not be used to plan real staffing.
+- The model has never been tested on any other dataset, including real clinic data. This guide has no information about how it would perform on other data.
+- Only weekdays Monday to Friday and hours 8 to 17 appear in the data. Predictions outside the ranges (for example weekends, or 10 staff) are not meaningful.
+- Staff counts only run from 1 to 5 and the queue from 0 to 20.

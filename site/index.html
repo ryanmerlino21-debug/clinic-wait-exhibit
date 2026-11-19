@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Wait-Time Simulator</title>
+<meta name="description" content="Adjust a simulated clinic and see a small neural network predict the wait time.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Clinic Wait-Time Simulator</h1>
+  <p class="lede">How much do staffing and queue length change how long patients wait? Move the sliders and a small neural network predicts the wait. The clinic is simulated, so no real patients are involved.</p>
+</header>
+
+<main>
+<section aria-labelledby="sim-h">
+  <h2 id="sim-h">1. Run the clinic</h2>
+  <div class="sim">
+    <div class="controls">
+      <label>Hour of day <output id="o-hour"></output>
+        <input type="range" id="hour" min="8" max="17" step="1" value="11"></label>
+      <label>Day
+        <select id="day"></select></label>
+      <label>Staff on shift <output id="o-staff"></output>
+        <input type="range" id="staff" min="1" max="5" step="1" value="2"></label>
+      <label>Patients in queue <output id="o-queue"></output>
+        <input type="range" id="queue" min="0" max="20" step="1" value="12"></label>
+    </div>
+    <div class="result" aria-live="polite">
+      <div class="big"><span id="pred">–</span><small> min</small></div>
+      <div class="sub">predicted wait</div>
+      <div class="sub" id="vs-base"></div>
+    </div>
+  </div>
+
+  <h3>Same clinic, different staffing</h3>
+  <p class="hint">Bars show the predicted wait for 1 to 5 staff with your other settings. Your current staffing is highlighted.</p>
+  <div id="bars" class="bars" role="img" aria-label="Predicted wait by number of staff"></div>
+  <p id="insight" class="insight"></p>
+</section>
+
+<section aria-labelledby="test-h">
+  <h2 id="test-h">2. Check the model on visits it never saw</h2>
+  <div class="stats" id="stats"></div>
+  <p>Each dot is one of 300 held-out visits. A dot on the diagonal line means the model got it exactly right. Click a dot to see that visit.</p>
+  <div class="scatterwrap">
+    <svg id="scatter" viewBox="0 0 400 320" role="img" aria-label="Predicted versus actual wait for held-out visits"></svg>
+    <div id="point" class="point">Click a dot, or <button id="show-worst" type="button">show the biggest miss</button>.</div>
+  </div>
+  <div class="mistake" id="mistake"></div>
+</section>
+
+<section aria-labelledby="chat-h">
+  <h2 id="chat-h">3. Ask the exhibit</h2>
+  <p>A small language model runs in your browser (no server, nothing is sent anywhere) and answers from a short guide about this exhibit. It needs WebGPU and downloads about 0.7 GB the first time.</p>
+  <div id="chat-status" class="hint"></div>
+  <button id="enable-chat" type="button">Enable chat</button>
+  <progress id="chat-progress" max="1" value="0" hidden></progress>
+  <div id="chat-load-text" class="hint"></div>
+  <div id="chat" hidden>
+    <div id="log" class="log" aria-live="polite"></div>
+    <form id="chat-form">
+      <input id="chat-input" type="text" autocomplete="off" placeholder="e.g. Where did the data come from?" aria-label="Your question">
+      <button type="submit">Ask</button>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <p><strong>Data:</strong> <a href="https://snsie.github.io/neural-networks/data/clinic-wait-times.csv">clinic-wait-times.csv</a> from the <a href="https://snsie.github.io/neural-networks/exercise.html">Neural Network Explorer</a> course site. It is synthetic (made up), 2,000 visits.</p>
+  <p><strong>Limits:</strong> this models a simulation, not a real clinic. Don't use it to plan real staffing. Chatbot answers can be wrong, so check them against this page and <a href="guide.txt">the guide</a>.</p>
+  <p><a href="https://github.com/">Source and training script</a> are in the project repository.</p>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
