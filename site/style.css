@@ -28,7 +28,7 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:72px}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
-.wrap{max-width:980px;margin:0 auto;padding:0 20px}
+.wrap{width:100%;max-width:none;margin:0 auto;padding:0 clamp(16px,4vw,72px)}
 h1,h2,h3{line-height:1.25;margin:0;color:var(--ink)}
 h1{font-size:clamp(1.7rem,4vw,2.3rem);font-weight:700;letter-spacing:-.01em;margin-bottom:12px}
 h2{font-size:1.45rem;font-weight:700;padding-bottom:8px;border-bottom:2px solid var(--primary);margin-bottom:8px}
@@ -51,7 +51,7 @@ a:hover{color:var(--accent-text)}
 main section{margin-top:44px}
 .intro{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px}
 .eyebrow{margin:0 0 6px;color:var(--link);font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
-.lead{font-size:1.08rem;color:var(--ink);margin:0 0 20px;max-width:760px}
+.lead{font-size:1.1rem;color:var(--ink);margin:0 0 20px;max-width:900px}
 .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
 .facts div{border-left:4px solid var(--primary);background:var(--tint);padding:10px 14px;border-radius:0 6px 6px 0}
 .facts b{display:block;font-size:1.7rem;line-height:1.2;color:var(--accent-text)}
@@ -144,7 +144,7 @@ td button{font:inherit;font-size:.85rem;border:0;background:none;color:var(--lin
 .lg i{width:12px;height:12px;border-radius:50%;display:inline-block}
 .lg[aria-pressed=false]{color:var(--muted);text-decoration:line-through;background:var(--bg)}
 .lg[aria-pressed=false] i{opacity:.35}
-.scatterwrap{position:relative;max-width:620px;margin:0 auto}
+.scatterwrap{position:relative;max-width:min(100%,860px);margin:0 auto}
 svg{width:100%;height:auto;display:block}
 svg text{fill:var(--muted);font-size:10px;font-family:inherit}
 svg .pt{opacity:.85;cursor:pointer;stroke:var(--surface);stroke-width:.8}
@@ -224,3 +224,14 @@ footer a{color:#fff}
 .pill.no{background:var(--bad-bg);color:var(--bad-fg)}
 .pill.partly{background:var(--amber-bg);color:var(--note-text)}
 .skeleton{color:var(--muted)}
+
+/* Use the extra width on large screens */
+@media (min-width:1280px){
+  .sim{grid-template-columns:1.2fr 1fr}
+  .facts{max-width:900px}
+  .intro{padding:36px 40px}
+  .intro .steps{columns:2;column-gap:40px}
+  .intro .steps li{break-inside:avoid}
+  .heat,.sched{min-width:0}
+}
+@media (min-width:1700px){body{font-size:17px}}
